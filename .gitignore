@@ -1,0 +1,5 @@
+*.ipynb
+.vscode
+data/
+processed/
+__pycache__

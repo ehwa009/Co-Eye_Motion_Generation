@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import pickle
 
 from torch.utils.data import Dataset, DataLoader
 
@@ -9,7 +10,13 @@ from torch.utils.data import Dataset, DataLoader
 #         FaceLandmarksDataset()
 #     )
 
+def load_pickle(path):
+    with open(path, 'rb') as f:
+        data = pickle.load(f)
+    return data
 
+def load_torch(path):
+    return torch.load(path)
 
 class FaceLandmarksDataset(Dataset):
 

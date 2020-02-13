@@ -26,7 +26,8 @@ def get_data_pair(dataset):
     for data in tqdm(dataset):
         for clip_info in data['clip_info']:
             for sents, landmarks in zip(clip_info['sent'], clip_info['landmarks']):
-                x.append(normalize_string(unicode_to_ascii(sents[2])))
+                # x.append(normalize_string(unicode_to_ascii(sents[2])))
+                x.append(normalize_string(sents[2]))
                 y.append(landmarks)
 
     print('[INFO] Dataset description.')
@@ -43,35 +44,38 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-dataset', default='./data/processed_eye_motion_dataset.pickle')
     parser.add_argument('-pretrained_emb', default='./data/glove.6B.300d.txt')
+    
     parser.add_argument('-data_size', type=int, default=-1)
     parser.add_argument('-emb', default='./data/glove.6B.300d.txt')
     parser.add_argument('-processed_path', default='./processed')
-
     parser.add_argument('-pca_components', type=int, default=10)
+    parser.add_argument('-keep_case', action='store_true')
     opt = parser.parse_args()
 
     eye_dataset, estimator = load_processed_data(opt.dataset, opt.data_size)
     src_insts, trg_insts = get_data_pair(eye_dataset)
-    
+
     print('[INFO] Build word vocab.')
-    lang = Lang('eng')
-    for src_inst in src_insts:
+    lang = Lang(name='eng', lang_model='en')
+    src_tokens = []
+    for src_inst in tqdm(src_insts):
         lang.add_sentence(src_inst)
+        src_tokens.append(lang.tokenize(src_inst))
     print('[INFO] Counted words: {}, {}'.format(lang.name, lang.n_words))
     
     print('[INFO] Pre-trained word embedding is loaded from {}'.format(opt.pretrained_emb))
     emb_table = lang.build_emb_table(opt.pretrained_emb)
 
-    processed_data = {
-        'setting': opt,
+    data = {
         'lang': lang,
         'emb_table': emb_table,
         'estimator': estimator,
-        'src_insts': src_inst,
+        'src_insts': src_tokens,
         'trg_insts': trg_insts,
     }
     print('[INFO] Dumping the processed data to pickle file: {}'.format(opt.processed_path))
-    torch.save(processed_data, '{}/processed_final.pickle'.format(opt.processed_path))
+    torch.save(data, '{}/processed_final.pickle'.format(opt.processed_path))
+    # pickle.dump(data, open('{}/processed_final.pickle'.format(opt.processed_path), 'wb'))
 
 
 if __name__ == '__main__':

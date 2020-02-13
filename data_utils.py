@@ -2,6 +2,7 @@ import re
 import unicodedata
 # import bcolz
 import numpy as np
+import spacy
 
 from tqdm import tqdm
 
@@ -12,12 +13,14 @@ EOS_TOKEN = 1
 
 class Lang:
     
-    def __init__(self, name):
+    def __init__(self, name, lang_model):
         self.name = name
         self.word2index = {}
         self.word2count = {}
         self.index2word = {0: 'SOS', 1: 'EOS'}
         self.n_words = 2 # include SOS and EOS
+        
+        self.lang_model = spacy.load(lang_model)
 
     def add_sentence(self, sentence):
         for word in sentence.split(' '):
@@ -42,11 +45,14 @@ class Lang:
         emb_table = np.zeros((len(vocab), w_dim))
         for key, val in vocab.items():
             try:
-                emb_table[val] = vects[word2idx[key]]
+                emb_table[key] = vects[word2idx[val]]
             except KeyError:
-                emb_table[val] = np.random.normal(scale=0.6, size=(w_dim, ))
+                emb_table[key] = np.random.normal(scale=0.6, size=(w_dim, ))
 
         return emb_table
+
+    def tokenize(self, text):
+        return [tok.text for tok in self.lang_model.tokenizer(text)]
 
 
 
@@ -58,7 +64,8 @@ def unicode_to_ascii(string):
     
 
 def normalize_string(string):
-    string = unicode_to_ascii(string.lower().strip())
+    # string = unicode_to_ascii(string.lower().strip())
+    string = string.lower().strip()
     string = re.sub(r"([.!?])", r" \1", string)
     string = re.sub(r"[^a-zA-Z.!?]+", r" ", string)
 

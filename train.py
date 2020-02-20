@@ -102,6 +102,8 @@ def main():
     parser.add_argument('-n_layers', type=int, default=2)
     parser.add_argument('-dropout', type=int, default=0.1)
 
+
+
     opt = parser.parse_args()
 
     # load dataset

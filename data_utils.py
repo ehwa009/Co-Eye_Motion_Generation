@@ -17,7 +17,7 @@ class Lang:
         self.name = name
         self.word2index = {}
         self.word2count = {}
-        self.index2word = {0: 'SOS', 1: 'EOS'}
+        self.index2word = {0: 'PAD', 1: 'UNK', 2: 'SOS', 3: 'EOS',}
         self.n_words = 2 # include SOS and EOS
         
         self.lang_model = spacy.load(lang_model)

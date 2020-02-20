@@ -1,6 +1,7 @@
 import pickle
 import argparse
 import torch
+import constant
 
 from sklearn.decomposition import PCA
 from data_utils import *
@@ -26,9 +27,10 @@ def get_data_pair(dataset):
     for data in tqdm(dataset):
         for clip_info in data['clip_info']:
             for sents, landmarks in zip(clip_info['sent'], clip_info['landmarks']):
-                # x.append(normalize_string(unicode_to_ascii(sents[2])))
-                x.append(normalize_string(sents[2]))
-                y.append(landmarks)
+                if len(sents) > 0 and len(landmarks) > 0:
+                    # x.append(normalize_string(unicode_to_ascii(sents[2])))
+                    x.append(normalize_string(sents[2]))
+                    y.append(landmarks)
 
     print('[INFO] Dataset description.')
     print('\tData pairs: {}'.format(len(x)))
@@ -40,12 +42,16 @@ def get_data_pair(dataset):
     return x, y
 
 
+def convert_inst_to_idx_seq(insts, word2idx):
+    pass
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-dataset', default='./data/processed_eye_motion_dataset.pickle')
     parser.add_argument('-pretrained_emb', default='./data/glove.6B.300d.txt')
     
-    parser.add_argument('-data_size', type=int, default=-1)
+    parser.add_argument('-data_size', type=int, default=5) # -1 means entire dataset
     parser.add_argument('-emb', default='./data/glove.6B.300d.txt')
     parser.add_argument('-processed_path', default='./processed')
     parser.add_argument('-pca_components', type=int, default=10)
@@ -57,10 +63,13 @@ def main():
 
     print('[INFO] Build word vocab.')
     lang = Lang(name='eng', lang_model='en')
+    # create word2idx table and tokenizing
     src_tokens = []
-    for src_inst in tqdm(src_insts):
+    for i, src_inst in enumerate(tqdm(src_insts)):
         lang.add_sentence(src_inst)
-        src_tokens.append(lang.tokenize(src_inst))
+        # convert word token to word index
+        src_tokens.append([lang.word2index.get(w_token, constant.UNK) 
+                                        for w_token in src_inst.split(' ')])
     print('[INFO] Counted words: {}, {}'.format(lang.name, lang.n_words))
     
     print('[INFO] Pre-trained word embedding is loaded from {}'.format(opt.pretrained_emb))

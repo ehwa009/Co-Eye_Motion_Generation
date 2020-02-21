@@ -2,7 +2,7 @@ import re
 import unicodedata
 # import bcolz
 import numpy as np
-import spacy
+# import spacy
 
 from tqdm import tqdm
 
@@ -20,7 +20,7 @@ class Lang:
         self.index2word = {0: 'PAD', 1: 'UNK', 2: 'SOS', 3: 'EOS',}
         self.n_words = 2 # include SOS and EOS
         
-        self.lang_model = spacy.load(lang_model)
+        # self.lang_model = spacy.load(lang_model)
 
     def add_sentence(self, sentence):
         for word in sentence.split(' '):
@@ -51,8 +51,8 @@ class Lang:
 
         return emb_table
 
-    def tokenize(self, text):
-        return [tok.text for tok in self.lang_model.tokenizer(text)]
+    # def tokenize(self, text):
+    #     return [tok.text for tok in self.lang_model.tokenizer(text)]
 
 
 

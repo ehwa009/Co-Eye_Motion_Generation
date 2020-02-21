@@ -6,18 +6,18 @@ import math
 
 class EncoderRNN(nn.Module):
     
-    def __init__(self, src_size, embbedding_size, pre_trained_embbing=None, hidden=200, bidirectional=True, n_layers=2, dropout=0.1):
+    def __init__(self, src_size, embbedding_size, pre_trained_embedding=None, hidden=200, bidirectional=True, n_layers=2, dropout=0.1):
         super().__init__()
         self.hidden = hidden
         self.bidirectional = bidirectional
         self.n_layers = n_layers
         self.dropout = dropout
 
-        if pre_trained_embbing is not None:
+        if pre_trained_embedding is not None:
             # get embedding layer - glove
             self.embedding = nn.Embedding.from_pretrained(
-                                        torch.from_numpy(emb).float(),
-                                        freeze=True)
+                                torch.from_numpy(pre_trained_embedding).float(),
+                                freeze=True)
         else:
             self.embedding = nn.Embedding(src_size, embbedding_size)
 
@@ -79,7 +79,7 @@ class Attn(nn.Module):
 
 class BahdanauAttnDecoderRNN(nn.Module):
     
-    def __init__(self, hidden=200, trg_dim=10, n_layers=2, dropout=0.1):
+    def __init__(self, hidden=200, trg_dim=15, n_layers=2, dropout=0.1):
         super().__init__()
         self.hidden = hidden
         self.trg_dim = trg_dim
@@ -137,7 +137,7 @@ class Generator(nn.Module):
 
 class Seq2Seq(nn.Module):
     
-    def __init__(self, src_size=8, pre_trained_embbing=None, embbedding_size=300, 
+    def __init__(self, src_size=8, pre_trained_embedding=None, embbedding_size=300, 
                     n_pre_poses=10, hidden=200, bidirectional=True, 
                     n_layers=2, trg_dim=10, use_residual=True, dropout=0.1):
         super().__init__()
@@ -145,7 +145,7 @@ class Seq2Seq(nn.Module):
         self.encoder = EncoderRNN(
                             src_size=src_size,
                             embbedding_size=embbedding_size,
-                            pre_trained_embbing=pre_trained_embbing,
+                            pre_trained_embedding=pre_trained_embedding,
                             hidden=hidden,
                             bidirectional=bidirectional,
                             n_layers=n_layers,
@@ -173,12 +173,12 @@ class Seq2Seq(nn.Module):
         all_dec_out = torch.zeros(trg.size(0), trg.size(1), trg.size(2)).to(trg.device) # B x S x dim
 
         # run through decoder one time step at a time
-        dec_in = trg[0] # set inital pose
+        dec_in = trg[0] # set inital motion
         all_dec_out[0] = dec_in
         for step in range(1, trg.size(0)):
             dec_out, dec_hid, _ = self.decoder(dec_in, dec_hid, enc_out)
             all_dec_out[step] = dec_out
-            if step < self.n_pre_poses: # teacher forcing until n previous poses
+            if step < self.n_pre_poses: # use teacher forcing until n-previous motions
                 dec_in = trg[step]
             else:
                 dec_in = dec_out

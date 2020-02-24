@@ -10,8 +10,10 @@ def load_pickle(path):
         data = pickle.load(f)
     return data
 
+
 def load_torch(path):
     return torch.load(path)
+
 
 class EyeExpressionDataset(Dataset):
 

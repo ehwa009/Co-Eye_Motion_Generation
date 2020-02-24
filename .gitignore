@@ -2,4 +2,6 @@
 .vscode
 data/
 processed/
+log/
+chkpt/
 __pycache__

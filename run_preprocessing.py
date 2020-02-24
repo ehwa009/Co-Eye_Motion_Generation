@@ -48,14 +48,14 @@ def convert_inst_to_idx_seq(insts, word2idx):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-dataset', default='./data/processed_eye_motion_dataset.pickle')
-    parser.add_argument('-pretrained_emb', default='./data/glove.6B.300d.txt')
     
-    parser.add_argument('-data_size', type=int, default=5) # -1 means entire dataset
+    parser.add_argument('-dataset', default='./data/processed_eye_motion_dataset_pca_7.pickle')
+    parser.add_argument('-pretrained_emb', default='./data/glove.6B.300d.txt')
+    parser.add_argument('-data_size', type=int, default=-1) # -1 means entire dataset
     parser.add_argument('-emb', default='./data/glove.6B.300d.txt')
     parser.add_argument('-processed_path', default='./processed')
-    parser.add_argument('-pca_components', type=int, default=10)
     parser.add_argument('-keep_case', action='store_true')
+    
     opt = parser.parse_args()
 
     eye_dataset, estimator = load_processed_data(opt.dataset, opt.data_size)

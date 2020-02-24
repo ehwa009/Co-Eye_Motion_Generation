@@ -26,7 +26,7 @@ class EncoderRNN(nn.Module):
                         bidirectional=self.bidirectional,
                         num_layers=n_layers)
 
-    def forward(self, src, src_len, hidden=None):
+    def forward(self, src, src_len=None, hidden=None):
         embedded = self.embedding(src)
         if embedded.size(1) > 1: # if batch size is bigger than 1, use pack and padded seq
             packed = torch.nn.utils.rnn.pack_padded_sequence(embedded, src_len)
@@ -138,7 +138,7 @@ class Generator(nn.Module):
 class Seq2Seq(nn.Module):
     
     def __init__(self, src_size=8, pre_trained_embedding=None, embbedding_size=300, 
-                    n_pre_poses=10, hidden=200, bidirectional=True, 
+                    n_pre_motions=10, hidden=200, bidirectional=True, 
                     n_layers=2, trg_dim=10, use_residual=True, dropout=0.1):
         super().__init__()
         
@@ -150,35 +150,31 @@ class Seq2Seq(nn.Module):
                             bidirectional=bidirectional,
                             n_layers=n_layers,
                             dropout=dropout)
-        
         self.decoder = Generator(
                             hidden=hidden,
                             trg_dim=trg_dim,
                             n_layers=n_layers,
                             dropout=dropout,
                             use_residual=use_residual)
-
-        self.n_pre_poses = n_pre_poses
+        self.n_pre_motions = n_pre_motions
 
     def forward(self, src, src_len, trg):
         # reshape to S x B x dim
         src = src.transpose(0, 1)
         trg = trg.transpose(0, 1)
-
         # run words through the encoder
         enc_out, enc_hid = self.encoder(src, src_len)
         dec_hid = enc_hid[:self.decoder.n_layers]
-
         # set output to be stored
         all_dec_out = torch.zeros(trg.size(0), trg.size(1), trg.size(2)).to(trg.device) # B x S x dim
-
+        
         # run through decoder one time step at a time
         dec_in = trg[0] # set inital motion
         all_dec_out[0] = dec_in
         for step in range(1, trg.size(0)):
             dec_out, dec_hid, _ = self.decoder(dec_in, dec_hid, enc_out)
             all_dec_out[step] = dec_out
-            if step < self.n_pre_poses: # use teacher forcing until n-previous motions
+            if step < self.n_pre_motions: # use teacher forcing until n-previous motions
                 dec_in = trg[step]
             else:
                 dec_in = dec_out
@@ -186,12 +182,12 @@ class Seq2Seq(nn.Module):
         return all_dec_out.transpose(0, 1)
 
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
     
-    # dummpy src and trg data
-    src = torch.ones(2,8).long()
-    trg = torch.randn(2,30,10).float()
+#     # dummpy src and trg data
+#     src = torch.ones(2,8).long()
+#     trg = torch.randn(2,30,10).float()
     
-    model = Seq2Seq()
+#     model = Seq2Seq()
     
-    o = model(src, torch.tensor([8, 8]), trg)
+#     o = model(src, torch.tensor([8, 8]), trg)

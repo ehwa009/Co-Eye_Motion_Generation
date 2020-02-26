@@ -177,7 +177,7 @@ def train_epoch(model, train_data, optim, device, opt):
             # backward pass
             loss.backward() 
             # gradient clipping
-            # torch.nn.utils.clip_grad_norm_(model.parameters(), opt.max_grad_norm)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), opt.max_grad_norm)
             # optimize step
             optim.step()
             # calculate total loss
@@ -210,7 +210,7 @@ def main():
     parser.add_argument('-data', default='./processed/processed_final.pickle')
     parser.add_argument('-chkpt', default='./chkpt')
     parser.add_argument('-trained_model', default='./chkpt/eye_model.chkpt')
-    parser.add_argument('-batch_size', type=int, default=64)
+    parser.add_argument('-batch_size', type=int, default=256)
     parser.add_argument('-num_workers', type=int, default=7)
     parser.add_argument('-is_shuffle', type=bool, default=True)
     parser.add_argument('-log', default='./log')
@@ -218,18 +218,19 @@ def main():
     parser.add_argument('-save_interval', type=int, default=20)
 
     # network parameters
+    parser.add_argument('-rnn_type', default='GRU')
     parser.add_argument('-hidden', type=int, default=200)
     parser.add_argument('-n_layers', type=int, default=2)
     parser.add_argument('-dropout', type=float, default=0.1)
     parser.add_argument('-bidirectional', type=bool, default=True)
-    parser.add_argument('-lr', type=float, default=0.00001)
-    parser.add_argument('-wd', type=float, default=0.0001)
+    parser.add_argument('-lr', type=float, default=0.0001)
+    parser.add_argument('-wd', type=float, default=0.00001)
     parser.add_argument('-epoch', type=int, default=500)
     
     # loss parameters
     parser.add_argument('-alpha', type=float, default=0.0)
     parser.add_argument('-beta', type=float, default=1.0)
-    parser.add_argument('-max_grad_norm', type=float, default=5.0)
+    parser.add_argument('-max_grad_norm', type=float, default=2.0)
 
     opt = parser.parse_args()
     print(opt)
@@ -247,7 +248,8 @@ def main():
         setting = model['setting']
         start_i = model['epoch'] + 1
         # prepare model
-        model = Seq2Seq(hidden=setting.hidden, bidirectional=setting.bidirectional, 
+        model = Seq2Seq(hidden=setting.hidden, rnn_type=opt.rnn_type,
+                        bidirectional=setting.bidirectional, 
                         n_layers=setting.n_layers, dropout=setting.dropout,
                         n_pre_motions=PRE_MOTIONS, pre_trained_embedding=data['emb_table'], 
                         trg_dim=data['estimator'].n_components).to(device)

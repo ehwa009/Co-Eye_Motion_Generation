@@ -11,7 +11,7 @@ from Seq2Eye.decoder import Generator
 class Seq2Seq(nn.Module):
     
     def __init__(self, src_size=8, pre_trained_embedding=None, embbedding_size=300, 
-                    n_pre_motions=10, hidden=200, bidirectional=True, 
+                    n_pre_motions=10, rnn_type='GRU', hidden=200, bidirectional=True, 
                     n_layers=2, trg_dim=10, use_residual=True, dropout=0.1):
         super().__init__()
         
@@ -20,10 +20,12 @@ class Seq2Seq(nn.Module):
                             embbedding_size=embbedding_size,
                             pre_trained_embedding=pre_trained_embedding,
                             hidden=hidden,
+                            rnn_type=rnn_type,
                             bidirectional=bidirectional,
                             n_layers=n_layers,
                             dropout=dropout)
         self.decoder = Generator(
+                            encoder=self.encoder,
                             hidden=hidden,
                             trg_dim=trg_dim,
                             n_layers=n_layers,
@@ -37,7 +39,8 @@ class Seq2Seq(nn.Module):
         trg = trg.transpose(0, 1)
         # run words through the encoder
         enc_out, enc_hid = self.encoder(src, src_len)
-        dec_hid = enc_hid[:self.decoder.n_layers * 2] # each layer has 2 x b x dim hidden dimmension
+        # initialize decoder's hidden state as encoder's last hidden state (2 x b x dim)
+        dec_hid = enc_hid
         # set output to be stored
         all_dec_out = torch.zeros(trg.size(0), trg.size(1), trg.size(2)).to(trg.device) # B x S x dim
         

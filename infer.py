@@ -27,7 +27,7 @@ def inference(model, input_words, pre_motion_seq, word2idx):
 
     # encoder forward
     enc_out, enc_hid = model.encoder(input_seq)
-    dec_hid = enc_hid[:model.decoder.n_layers * 2]
+    dec_hid = enc_hid
 
     trg_len = PRE_MOTIONS + ESTIMATION_MOTIONS
     motion_out = np.array([])
@@ -99,7 +99,8 @@ def main():
     settings = trained_model['setting']
     
     # prepare model
-    model = Seq2Seq(hidden=settings.hidden, bidirectional=settings.bidirectional, 
+    model = Seq2Seq(hidden=settings.hidden, rnn_type=settings.rnn_type,
+                    bidirectional=settings.bidirectional, 
                     n_layers=settings.n_layers, dropout=settings.dropout,
                     pre_trained_embedding=data['emb_table'], 
                     trg_dim=data['estimator'].n_components)

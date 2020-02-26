@@ -9,12 +9,14 @@ GRU
 '''
 class EncoderRNN(nn.Module):
     
-    def __init__(self, src_size, embbedding_size, pre_trained_embedding=None, hidden=200, bidirectional=True, n_layers=2, dropout=0.1):
+    def __init__(self, src_size, embbedding_size, pre_trained_embedding=None, rnn_type='GRU', hidden=200, bidirectional=True, n_layers=2, dropout=0.1):
         super().__init__()
         self.hidden = hidden
         self.bidirectional = bidirectional
         self.n_layers = n_layers
         self.dropout = dropout
+        self.rnn_type = rnn_type
+        self.n_directions = 2 if bidirectional else 1
 
         if pre_trained_embedding is not None:
             # get embedding layer - glove
@@ -24,70 +26,52 @@ class EncoderRNN(nn.Module):
         else:
             self.embedding = nn.Embedding(src_size, embbedding_size)
 
-        self.gru = nn.GRU(embbedding_size,
-                        hidden,
-                        bidirectional=self.bidirectional,
-                        num_layers=n_layers)
-
-        # self.lstm = nn.LSTM(embbedding_size, hidden, n_layers, 
-        #                     bidirectional=bidirectional,
-        #                     dropout=dropout)
+        # initialize rnn
+        self.rnn = getattr(nn, self.rnn_type)(
+                        embbedding_size, hidden, n_layers,
+                        dropout=self.dropout,
+                        bidirectional=self.bidirectional)
 
     def forward(self, src, src_len=None, hidden=None):
         embedded = self.embedding(src)
         if embedded.size(1) > 1: # if batch size is bigger than 1, use pack and padded seq
             packed = torch.nn.utils.rnn.pack_padded_sequence(embedded, src_len)
-            output, hidden = self.gru(packed, hidden) # output: B x S x dim, hidden: S x B x H
-            # output, hidden = self.lstm(packed, hidden)
+            output, hidden = self.rnn(packed, hidden) # output: B x S x dim, hidden: S x B x H
             output, _ = torch.nn.utils.rnn.pad_packed_sequence(output) # unpacked
         else:
-            output, hidden = self.gru(embedded, hidden)
-            # _, output, hidden = self.lstm(embedded, hidden)
-        
-        # if self.batch_first:
-        #     hidden = hidden.transpose(0,1) # S x B x H -> B x S x H
+            output, hidden = self.rnn(embedded, hidden)
+
         if self.bidirectional:
-            output = output[:, :, :self.hidden] + output[:, :, self.hidden:] # sum bidirectional outputs
+            hidden = self._cat_directions(hidden)
+            # output = output[:, :, :self.hidden] + output[:, :, self.hidden:] # sum bidirectional outputs
 
         return output, hidden
 
-'''
-LSTM
-'''
-class EncoderLSTM(nn.Module):
-    
-    def __init__(self, src_size, embbedding_size, pre_trained_embedding=None, hidden=200, bidirectional=True, n_layers=2, dropout=0.1):
-        super().__init__()
-        self.hidden = hidden
-        self.bidirectional = bidirectional
-        self.n_layers = n_layers
-        self.dropout = dropout
+    def _cat_directions(self, hidden):
+        """ If the encoder is bidirectional, do the following transformation.
+            Ref: https://github.com/IBM/pytorch-seq2seq/blob/master/seq2seq/models/DecoderRNN.py#L176
+            -----------------------------------------------------------
+            In: (num_layers * num_directions, batch_size, hidden_size)
+            (ex: num_layers=2, num_directions=2)
 
-        if pre_trained_embedding is not None:
-            # get embedding layer - glove
-            self.embedding = nn.Embedding.from_pretrained(
-                                torch.from_numpy(pre_trained_embedding).float(),
-                                freeze=True)
+            layer 1: forward__hidden(1)
+            layer 1: backward_hidden(1)
+            layer 2: forward__hidden(2)
+            layer 2: backward_hidden(2)
+
+            -----------------------------------------------------------
+            Out: (num_layers, batch_size, hidden_size * num_directions)
+
+            layer 1: forward__hidden(1) backward_hidden(1)
+            layer 2: forward__hidden(2) backward_hidden(2)
+        """
+        def _cat(h):
+            return torch.cat([h[0:h.size(0):2], h[1:h.size(0):2]], 2)
+        if isinstance(hidden, tuple):
+            # LSTM hidden contains a tuple (hidden state, cell state)
+            hidden = tuple([_cat(h) for h in hidden])
         else:
-            self.embedding = nn.Embedding(src_size, embbedding_size)
-
-        self.lstm = nn.LSTM(embbedding_size, hidden, n_layers, 
-                            bidirectional=bidirectional,
-                            dropout=dropout)
-
-    def forward(self, src, src_len=None, hidden=None):
-        embedded = self.embedding(src)
-        if embedded.size(1) > 1: # if batch size is bigger than 1, use pack and padded seq
-            packed_input = torch.nn.utils.rnn.pack_padded_sequence(embedded, src_len)
-            packed_output, (hidden, cell) = self.lstm(packed_input, hidden)
-            output, _ = torch.nn.utils.rnn.pad_packed_sequence(packed_output) # unpacked
-        else:
-            output, (hidden, cell) = self.lstm(embedded, hidden)
-        
-        # if self.batch_first:
-        #     hidden = hidden.transpose(0,1) # S x B x H -> B x S x H
-        if self.bidirectional:
-            hidden = hidden[:, :, :self.hidden] + hidden[:, :, self.hidden:]
-            cell = cell[:, :, :self.hidden] + cell[:, :, self.hidden:]
-
-        return hidden, cell
+            # GRU hidden
+            hidden = _cat(hidden)
+            
+        return hidden

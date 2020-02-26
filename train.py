@@ -31,13 +31,13 @@ def custom_loss(output, trg, alpha=0.001, beta=0.1):
     # mse; output will be between 0 to 1
     mse_loss = F.mse_loss(output, trg)
     # continuity
-    diff = [abs(output[:, n, :] - output[:, n-1, :]) for n in range(1, output.shape[1])]
-    cont_loss = torch.sum(torch.stack(diff)) / n_element
+    # diff = [abs(output[:, n, :] - output[:, n-1, :]) for n in range(1, output.shape[1])]
+    # cont_loss = torch.sum(torch.stack(diff)) / n_element
     # variance
     var_loss = -torch.sum(torch.norm(output, 2, 1)) / n_element
     # custom loss
-    loss = mse_loss + alpha * cont_loss + beta * var_loss
-    # loss = mse_loss + beta * var_loss
+    # loss = mse_loss + alpha * cont_loss + beta * var_loss
+    loss = mse_loss + beta * var_loss
 
     return loss
 
@@ -177,7 +177,7 @@ def train_epoch(model, train_data, optim, device, opt):
             # backward pass
             loss.backward() 
             # gradient clipping
-            torch.nn.utils.clip_grad_norm_(model.parameters(), opt.max_grad_norm)
+            # torch.nn.utils.clip_grad_norm_(model.parameters(), opt.max_grad_norm)
             # optimize step
             optim.step()
             # calculate total loss
@@ -210,19 +210,20 @@ def main():
     parser.add_argument('-data', default='./processed/processed_final.pickle')
     parser.add_argument('-chkpt', default='./chkpt')
     parser.add_argument('-trained_model', default='./chkpt/eye_model.chkpt')
-    parser.add_argument('-batch_size', type=int, default=128)
-    parser.add_argument('-num_workers', type=int, default=0)
+    parser.add_argument('-batch_size', type=int, default=64)
+    parser.add_argument('-num_workers', type=int, default=7)
     parser.add_argument('-is_shuffle', type=bool, default=True)
     parser.add_argument('-log', default='./log')
     parser.add_argument('-save_mode', default='best_and_interval')
-    parser.add_argument('-save_interval', type=int, default=10)
+    parser.add_argument('-save_interval', type=int, default=20)
 
     # network parameters
     parser.add_argument('-hidden', type=int, default=200)
     parser.add_argument('-n_layers', type=int, default=2)
     parser.add_argument('-dropout', type=float, default=0.1)
     parser.add_argument('-bidirectional', type=bool, default=True)
-    parser.add_argument('-lr', type=float, default=0.0001)
+    parser.add_argument('-lr', type=float, default=0.00001)
+    parser.add_argument('-wd', type=float, default=0.0001)
     parser.add_argument('-epoch', type=int, default=500)
     
     # loss parameters
@@ -244,7 +245,7 @@ def main():
         model = torch.load(opt.trained_model)
         state = model['model']
         setting = model['setting']
-        start_i = model['epoch']
+        start_i = model['epoch'] + 1
         # prepare model
         model = Seq2Seq(hidden=setting.hidden, bidirectional=setting.bidirectional, 
                         n_layers=setting.n_layers, dropout=setting.dropout,
@@ -261,7 +262,7 @@ def main():
                         trg_dim=data['estimator'].n_components).to(device)
         start_i = 0 # initial epoch
     # optimizer
-    optimizer = optim.Adam(model.parameters(), lr=opt.lr)
+    optimizer = optim.Adam(model.parameters(), lr=opt.lr, weight_decay=opt.wd)
     # train process
     train(model, train_data, valid_data, optimizer, device, opt, start_i)
 

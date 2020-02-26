@@ -30,7 +30,7 @@ def display_loss(log_train_file, log_vaild_file):
         'Valid_loss': loss_vf
     })  
 
-    plt.figure(figsize=(15, 9))
+    plt.figure(figsize=(12, 9))
     sns.set_style('darkgrid')
     sns.lineplot(data=loss_df, x='Epoch', y='Train_loss', label='Train')
     sns.lineplot(data=loss_df, x='Epoch', y='Valid_loss', label='Valid')

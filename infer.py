@@ -27,7 +27,7 @@ def inference(model, input_words, pre_motion_seq, word2idx):
 
     # encoder forward
     enc_out, enc_hid = model.encoder(input_seq)
-    dec_hid = enc_hid[:model.decoder.n_layers]
+    dec_hid = enc_hid[:model.decoder.n_layers * 2]
 
     trg_len = PRE_MOTIONS + ESTIMATION_MOTIONS
     motion_out = np.array([])
@@ -81,10 +81,11 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-data', default='./processed/processed_final.pickle')
-    # parser.add_argument('-chkpt', default='./chkpt/eye_model.chkpt')
-    parser.add_argument('-chkpt', default='./chkpt/300_0.469.chkpt')
+    parser.add_argument('-chkpt', default='./chkpt/eye_model.chkpt')
+    # parser.add_argument('-chkpt', default='./chkpt/460_0.690.chkpt')
     # parser.add_argument('-chkpt', default='./chkpt/lr_0.0001_batch_size_512/eye_model.chkpt')
-    
+    parser.add_argument('-vid_save_path', default='./output_vid')
+
     opt = parser.parse_args()
 
     # sent = 'Physical education usually involves studying human biology and exercise'
@@ -120,7 +121,7 @@ def main():
 
     # display infered output
     display = Display(180, 320) # 320 x 180
-    display.display(eye_motion_list)
+    display.display_and_save(eye_motion_list, sent, opt.vid_save_path)
 
 
 

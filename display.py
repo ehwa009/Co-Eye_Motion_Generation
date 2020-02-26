@@ -70,9 +70,14 @@ class Display:
 
         return frame
 
-    def display(self, eye_motion_list):
+    def display_and_save(self, eye_motion_list, text, save_path):
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        out = cv2.VideoWriter('{}/output.mp4'.format(save_path), fourcc, 20.0, (self.x_lim, self.y_lim))
         for eye_motion in eye_motion_list:
-            frame = self.draw_frame(eye_motion, False)
+            frame = self.draw_frame(eye_motion, False, text)
+            out.write(frame)
             cv2.imshow('display', frame)
             if cv2.waitKey(self.sp) & 0xFF == ord('q'):
-                exit(-1) 
+                break
+        out.release()
+        cv2.destroyAllWindows()

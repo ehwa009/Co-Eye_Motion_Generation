@@ -14,7 +14,7 @@ FRAME_DURATION = 1/15    # we assumed 10fps for processed dataset
 # ESTIMATION_MOTIONS = 32
 
 PRE_MOTIONS = 10
-ESTIMATION_MOTIONS = 20
+ESTIMATION_MOTIONS = 30
 
 # SPEECH_SPEED = 2.5 # assumed speech speed in dataset is 2.5 wps (word per seceond)
 SPEECH_SPEED = 1.5

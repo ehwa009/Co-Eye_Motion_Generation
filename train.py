@@ -52,65 +52,61 @@ def train_kfold(model, train_data_list, test_data_list, optim, device, opt, star
 
     train_loss_list = []
     test_loss_list = []
-    epoch = 0
-    for _ in tqdm_gui(range(0, int(opt.epoch/opt.n_splits))):
-        for train_data, test_data in zip(train_data_list, test_data_list):
-            print('[INFO] Epoch: {}'. format(epoch))
-            # train process
-            start = time.time()
-            train_loss = train_epoch(model, train_data, optim, device, opt)
-            print('\t- (Train)    loss: {:8.5f}, elapse: {:3.3f}'.format(
-                                        train_loss, (time.time() - start)/60))
-            train_loss_list += [train_loss]
-            # valid process
-            start = time.time()
-            test_loss = valid_epoch(model, test_data, device, opt)
-            print('\t- (Test)    loss: {:8.5f}, elapse: {:3.3f}'.format(
-                                            test_loss, (time.time() - start)/60))
-            test_loss_list += [test_loss] # record each valid loss
+    for i, (train_data, test_data) in enumerate(zip(train_data_list, test_data_list)):
+        epoch = start_i + i
+        print('[INFO] Epoch: {}'. format(epoch))
+        # train process
+        start = time.time()
+        train_loss = train_epoch(model, train_data, optim, device, opt)
+        print('\t- (Train)    loss: {:8.5f}, elapse: {:3.3f}'.format(
+                                    train_loss, (time.time() - start)/60))
+        train_loss_list += [train_loss]
+        # valid process
+        start = time.time()
+        test_loss = valid_epoch(model, test_data, device, opt)
+        print('\t- (Test)    loss: {:8.5f}, elapse: {:3.3f}'.format(
+                                        test_loss, (time.time() - start)/60))
+        test_loss_list += [test_loss] # record each valid loss
 
-            # record train and valid log files
-            if log_train_file and log_valid_file:
-                with open(log_train_file, 'a') as log_tf, open(log_valid_file, 'a') as log_vf:
-                    log_tf.write('{},{:8.5f}\n'.format(epoch, train_loss))
-                    log_vf.write('{},{:8.5f}\n'.format(epoch, test_loss))
+        # record train and valid log files
+        if log_train_file and log_valid_file:
+            with open(log_train_file, 'a') as log_tf, open(log_valid_file, 'a') as log_vf:
+                log_tf.write('{},{:8.5f}\n'.format(epoch, train_loss))
+                log_vf.write('{},{:8.5f}\n'.format(epoch, test_loss))
 
-            # to save trained model
-            model_state_dict = model.state_dict()
-            checkpoint = {
-                'model': model_state_dict,
-                'setting': opt,
-                'epoch': epoch
-            }
-            if not(os.path.exists(opt.chkpt)):
-                os.mkdir(opt.chkpt)
-            if opt.save_mode == 'best':
-                model_name = '{}/eye_model.chkpt'.format(opt.chkpt)
-                if train_loss <= min(train_loss_list):
-                    torch.save(checkpoint, model_name)
-                    print('\t[INFO] The checkpoint has been updated ({}).'.format(opt.save_mode))
-            elif opt.save_mode == 'interval':
-                if (epoch % opt.save_interval) == 0 and epoch != 0:
-                    model_name = '{}/{}_{:0.3f}.chkpt'.format(opt.chkpt, epoch, train_loss)
-                    torch.save(checkpoint, model_name)
-                    print('\t[INFO] The checkpoint has been updated ({}).'.format(opt.save_mode))
-            elif opt.save_mode == 'best_and_interval':
-                model_name = '{}/eye_model.chkpt'.format(opt.chkpt)
-                if train_loss <= min(train_loss_list):
-                    torch.save(checkpoint, model_name)
-                    print('\t[INFO] The best has been updated ({}).'.format(opt.save_mode))
-                if (epoch % opt.save_interval) == 0 and epoch != 0:
-                    model_name = '{}/{}_{:0.3f}.chkpt'.format(opt.chkpt, epoch, train_loss)
-                    torch.save(checkpoint, model_name)
-                    print('\t[INFO] The checkpoint has been saved ({}).'.format(opt.save_mode))
-            # save last trained model
-            if epoch == (opt.epoch - 1):
+        # to save trained model
+        model_state_dict = model.state_dict()
+        checkpoint = {
+            'model': model_state_dict,
+            'setting': opt,
+            'epoch': epoch
+        }
+        if not(os.path.exists(opt.chkpt)):
+            os.mkdir(opt.chkpt)
+        if opt.save_mode == 'best':
+            model_name = '{}/eye_model.chkpt'.format(opt.chkpt)
+            if train_loss <= min(train_loss_list):
+                torch.save(checkpoint, model_name)
+                print('\t[INFO] The checkpoint has been updated ({}).'.format(opt.save_mode))
+        elif opt.save_mode == 'interval':
+            if (epoch % opt.save_interval) == 0 and epoch != 0:
                 model_name = '{}/{}_{:0.3f}.chkpt'.format(opt.chkpt, epoch, train_loss)
                 torch.save(checkpoint, model_name)
-                print('\t[INFO] The last checkpoint has been saved.')
-            
-            # increase epoch
-            epoch += 1
+                print('\t[INFO] The checkpoint has been updated ({}).'.format(opt.save_mode))
+        elif opt.save_mode == 'best_and_interval':
+            model_name = '{}/eye_model.chkpt'.format(opt.chkpt)
+            if train_loss <= min(train_loss_list):
+                torch.save(checkpoint, model_name)
+                print('\t[INFO] The best has been updated ({}).'.format(opt.save_mode))
+            if (epoch % opt.save_interval) == 0 and epoch != 0:
+                model_name = '{}/{}_{:0.3f}.chkpt'.format(opt.chkpt, epoch, train_loss)
+                torch.save(checkpoint, model_name)
+                print('\t[INFO] The checkpoint has been saved ({}).'.format(opt.save_mode))
+        # save last trained model
+        if epoch == (opt.epoch - 1):
+            model_name = '{}/{}_{:0.3f}.chkpt'.format(opt.chkpt, epoch, train_loss)
+            torch.save(checkpoint, model_name)
+            print('\t[INFO] The last checkpoint has been saved.')
 
 
 def train(model, train_data, valid_data, optim, device, opt, start_i):
@@ -230,9 +226,10 @@ def main():
     # general parameters
     parser.add_argument('-data', default='./processed/processed_final.pickle')
     parser.add_argument('-chkpt', default='./chkpt')
-    parser.add_argument('-trained_model', default='./chkpt/280_0.946.chkpt')
-    parser.add_argument('-batch_size', type=int, default=10)
+    parser.add_argument('-trained_model', default='./chkpt/499_0.544.chkpt')
+    parser.add_argument('-batch_size', type=int, default=512)
     parser.add_argument('-num_workers', type=int, default=0)
+    parser.add_argument('-epoch', type=int, default=900)
     parser.add_argument('-is_shuffle', type=bool, default=True)
     parser.add_argument('-log', default='./log')
     parser.add_argument('-save_mode', default='best_and_interval')
@@ -248,7 +245,6 @@ def main():
     parser.add_argument('-bidirectional', type=bool, default=True)
     parser.add_argument('-lr', type=float, default=0.0001)
     parser.add_argument('-wd', type=float, default=0.00001)
-    parser.add_argument('-epoch', type=int, default=500)
     parser.add_argument('-use_residual', type=bool, default=True)
     
     # loss parameters

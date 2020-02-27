@@ -62,7 +62,7 @@ def infer_from_words(model, pca_n_components, words, word2idx):
     num_words_for_estimation = round(len(words) * expression_duration / sp_duration)
     
     padded_words = ['UNK'] * num_words_for_pre_motion + words
-    pre_motion_seq = np.zeros((total_motion_frames, pca_n_components))
+    pre_motion_seq = np.zeros((total_motion_frames, pca_n_components - 2))
 
     output_tuple = namedtuple('InferenceOutput', ['words', 'pre_motion_seq', 'out_motion', 'attention'])
     outputs = []
@@ -70,7 +70,10 @@ def infer_from_words(model, pca_n_components, words, word2idx):
         sample_words = padded_words[i:i + num_words_for_pre_motion + num_words_for_estimation]
         with torch.no_grad():
             output, attn = inference(model, sample_words, pre_motion_seq, word2idx)
-        outputs.append(output_tuple(sample_words, pre_motion_seq, output, attn))
+            # make original tranformed shape
+            pad = np.zeros((output.shape[0], pca_n_components - output.shape[1]))
+            pca_output = np.hstack((pad, output))
+        outputs.append(output_tuple(sample_words, pre_motion_seq, pca_output, attn))
         pre_motion_seq = np.asarray(output)[:PRE_MOTIONS]
 
     return outputs
@@ -79,7 +82,7 @@ def infer_from_words(model, pca_n_components, words, word2idx):
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-data', default='./processed/processed_final_15_pca.pickle')
+    parser.add_argument('-data', default='./processed/processed_final.pickle')
     parser.add_argument('-chkpt', default='./chkpt/eye_model.chkpt')
     # parser.add_argument('-chkpt', default='./chkpt/460_0.690.chkpt')
     # parser.add_argument('-chkpt', default='./chkpt/lr_0.0001_batch_size_512/eye_model.chkpt')
@@ -89,6 +92,7 @@ def main():
 
     # sent = 'Physical education usually involves studying human biology and exercise'
     sent = "it's really not a good thing to do no matter what stage of life you re in"
+    # sent = "If the coronavirus epidemic materially affects US economic growth it may increase the likelihood of Democratic victory in the 2020 election"
 
     # load data
     data = torch.load(opt.data)
@@ -98,11 +102,11 @@ def main():
     settings = trained_model['setting']
     
     # prepare model
-    model = Seq2Seq(hidden=settings.hidden, rnn_type=settings.rnn_type,
-                    bidirectional=settings.bidirectional, 
-                    n_layers=settings.n_layers, dropout=settings.dropout,
-                    pre_trained_embedding=data['emb_table'], 
-                    trg_dim=data['estimator'].n_components)
+    model = model = Seq2Seq(hidden=settings.hidden, rnn_type=settings.rnn_type,
+                        bidirectional=settings.bidirectional, 
+                        n_layers=settings.n_layers, dropout=settings.dropout,
+                        n_pre_motions=PRE_MOTIONS, pre_trained_embedding=data['emb_table'], 
+                        trg_dim=data['estimator'].n_components-2, use_residual=settings.use_residual)
     model.load_state_dict(state)
     model.eval()
     
@@ -120,7 +124,7 @@ def main():
             eye_motion_list.append(transformed)
 
     # display infered output
-    display = Display(180, 320) # 320 x 180
+    display = Display(180, 320, 50) # 320 x 180
     display.display_and_save(eye_motion_list, sent, opt.vid_save_path)
 
 

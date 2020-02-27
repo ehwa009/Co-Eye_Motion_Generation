@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from expression_dataset import EyeExpressionDataset
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.utils.data.sampler import Sampler
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, RepeatedKFold
 from collate import collate_fn
 
 
@@ -12,7 +12,7 @@ def prepare_kfold_dataloaders(data, opt):
     train_loaders = []
     test_loaders = []
     # KFold cross validation
-    kfold = KFold(opt.n_splits, True)
+    kfold = RepeatedKFold(opt.n_splits, int(opt.epoch/opt.n_splits), 45)
     eye_expression_dataset = EyeExpressionDataset(
                                 word2idx=data['lang'].word2index,
                                 idx2word=data['lang'].index2word,

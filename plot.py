@@ -33,12 +33,12 @@ def display_loss(log_train_file, log_vaild_file):
     plt.figure(figsize=(12, 9))
     sns.set_style('darkgrid')
     sns.lineplot(data=loss_df, x='Epoch', y='Train_loss', label='Train')
-    sns.lineplot(data=loss_df, x='Epoch', y='Valid_loss', label='Valid')
+    sns.lineplot(data=loss_df, x='Epoch', y='Valid_loss', label='Test')
 
     plt.legend()
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
-    plt.title('Train vs. Valid loss')
+    plt.title('Train vs. Test loss (K-fold cross validation)')
 
 
 def main():

@@ -9,7 +9,7 @@ GRU
 '''
 class EncoderRNN(nn.Module):
     
-    def __init__(self, src_size, embbedding_size, pre_trained_embedding=None, rnn_type='GRU', hidden=200, bidirectional=True, n_layers=2, dropout=0.1):
+    def __init__(self, embbedding_size, pre_trained_embedding, rnn_type, hidden, bidirectional, n_layers, dropout=0.1):
         super().__init__()
         self.hidden = hidden
         self.bidirectional = bidirectional
@@ -18,17 +18,18 @@ class EncoderRNN(nn.Module):
         self.rnn_type = rnn_type
         self.n_directions = 2 if bidirectional else 1
 
-        if pre_trained_embedding is not None:
+        # if pre_trained_embedding is not None:
             # get embedding layer - glove
-            self.embedding = nn.Embedding.from_pretrained(
-                                torch.from_numpy(pre_trained_embedding).float(),
-                                freeze=True)
-        else:
-            self.embedding = nn.Embedding(src_size, embbedding_size)
+        self.embedding = nn.Embedding.from_pretrained(
+                            torch.from_numpy(pre_trained_embedding).float(),
+                            freeze=True)
+        self.embedding_size = self.embedding.embedding_dim
+        # else:
+        #     self.embedding = nn.Embedding(src_size, embbedding_size)
 
         # initialize rnn
         self.rnn = getattr(nn, self.rnn_type)(
-                        embbedding_size, hidden, n_layers,
+                        self.embedding_size, hidden, n_layers,
                         dropout=self.dropout,
                         bidirectional=self.bidirectional)
 
@@ -67,6 +68,7 @@ class EncoderRNN(nn.Module):
         """
         def _cat(h):
             return torch.cat([h[0:h.size(0):2], h[1:h.size(0):2]], 2)
+        
         if isinstance(hidden, tuple):
             # LSTM hidden contains a tuple (hidden state, cell state)
             hidden = tuple([_cat(h) for h in hidden])

@@ -5,18 +5,18 @@ import numpy as np
 import math
 
 from Seq2Eye.encoder import EncoderRNN
-from Seq2Eye.decoder import Generator
+# from Seq2Eye.decoder import Generator
+from Seq2Eye.luong_attn_decoder import Generator
 
 
 class Seq2Seq(nn.Module):
     
-    def __init__(self, src_size=8, pre_trained_embedding=None, embbedding_size=300, 
-                    n_pre_motions=10, rnn_type='GRU', hidden=200, bidirectional=True, 
+    def __init__(self, rnn_type, src_size=8, pre_trained_embedding=None, embbedding_size=300, 
+                    n_pre_motions=10, hidden=200, bidirectional=True, 
                     n_layers=2, trg_dim=10, use_residual=True, dropout=0.1):
         super().__init__()
-        
+        # encoder
         self.encoder = EncoderRNN(
-                            src_size=src_size,
                             embbedding_size=embbedding_size,
                             pre_trained_embedding=pre_trained_embedding,
                             hidden=hidden,
@@ -24,13 +24,9 @@ class Seq2Seq(nn.Module):
                             bidirectional=bidirectional,
                             n_layers=n_layers,
                             dropout=dropout)
-        self.decoder = Generator(
-                            encoder=self.encoder,
-                            hidden=hidden,
-                            trg_dim=trg_dim,
-                            n_layers=n_layers,
-                            dropout=dropout,
-                            use_residual=use_residual)
+        # decoder
+        self.decoder = Generator(self.encoder, trg_dim, dropout, use_residual)
+
         self.n_pre_motions = n_pre_motions
 
     def forward(self, src, src_len, trg):

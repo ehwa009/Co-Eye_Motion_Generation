@@ -54,7 +54,6 @@ def inference(model, input_words, pre_motion_seq, word2idx):
 
 def infer_from_words(model, pca_n_components, words, word2idx):
     total_motion_frames = PRE_MOTIONS + ESTIMATION_MOTIONS
-    start = time.time()
     sp_duration = len(words) / SPEECH_SPEED
     pre_duration = PRE_MOTIONS * FRAME_DURATION
     expression_duration = ESTIMATION_MOTIONS * FRAME_DURATION
@@ -80,7 +79,7 @@ def infer_from_words(model, pca_n_components, words, word2idx):
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-data', default='./processed/processed_final.pickle')
+    parser.add_argument('-data', default='./processed/processed_final_15_pca.pickle')
     parser.add_argument('-chkpt', default='./chkpt/eye_model.chkpt')
     # parser.add_argument('-chkpt', default='./chkpt/460_0.690.chkpt')
     # parser.add_argument('-chkpt', default='./chkpt/lr_0.0001_batch_size_512/eye_model.chkpt')

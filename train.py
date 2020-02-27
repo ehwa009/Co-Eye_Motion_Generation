@@ -207,10 +207,10 @@ def main():
     parser = argparse.ArgumentParser()
 
     # general parameters
-    parser.add_argument('-data', default='./processed/processed_final.pickle')
+    parser.add_argument('-data', default='./processed/processed_final_15_pca.pickle')
     parser.add_argument('-chkpt', default='./chkpt')
-    parser.add_argument('-trained_model', default='./chkpt/eye_model.chkpt')
-    parser.add_argument('-batch_size', type=int, default=256)
+    parser.add_argument('-trained_model', default='./chkpt/280_0.946.chkpt')
+    parser.add_argument('-batch_size', type=int, default=512)
     parser.add_argument('-num_workers', type=int, default=7)
     parser.add_argument('-is_shuffle', type=bool, default=True)
     parser.add_argument('-log', default='./log')
@@ -258,7 +258,8 @@ def main():
     else:
         # prepare model
         print('[INFO] Preparing seq2seq model.')
-        model = Seq2Seq(hidden=opt.hidden, bidirectional=opt.bidirectional, 
+        model = Seq2Seq(hidden=opt.hidden, rnn_type=opt.rnn_type,
+                        bidirectional=opt.bidirectional, 
                         n_layers=opt.n_layers, dropout=opt.dropout,
                         n_pre_motions=PRE_MOTIONS, pre_trained_embedding=data['emb_table'], 
                         trg_dim=data['estimator'].n_components).to(device)

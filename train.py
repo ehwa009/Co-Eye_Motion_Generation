@@ -211,6 +211,7 @@ def main():
     parser.add_argument('-lr', type=float, default=0.0001)
     parser.add_argument('-wd', type=float, default=0.00001)
     parser.add_argument('-epoch', type=int, default=500)
+    parser.add_argument('-use_residual', type=bool, default=True)
     
     # loss parameters
     parser.add_argument('-alpha', type=float, default=0.0)
@@ -237,7 +238,7 @@ def main():
                         bidirectional=setting.bidirectional, 
                         n_layers=setting.n_layers, dropout=setting.dropout,
                         n_pre_motions=PRE_MOTIONS, pre_trained_embedding=data['emb_table'], 
-                        trg_dim=data['estimator'].n_components).to(device)
+                        trg_dim=data['estimator'].n_components, use_residual=setting.use_residual).to(device)
         # load trained state
         model.load_state_dict(state)
     else:
@@ -247,7 +248,7 @@ def main():
                         bidirectional=opt.bidirectional, 
                         n_layers=opt.n_layers, dropout=opt.dropout,
                         n_pre_motions=PRE_MOTIONS, pre_trained_embedding=data['emb_table'], 
-                        trg_dim=data['estimator'].n_components).to(device)
+                        trg_dim=data['estimator'].n_components, use_residual=opt.use_residual).to(device)
         start_i = 0 # initial epoch
     # optimizer
     optimizer = optim.Adam(model.parameters(), lr=opt.lr, weight_decay=opt.wd)

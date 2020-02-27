@@ -10,9 +10,8 @@ from Seq2Eye.luong_attn_decoder import Generator
 
 class Seq2Seq(nn.Module):
     
-    def __init__(self, rnn_type, pre_trained_embedding=None, 
-                    n_pre_motions=10, hidden=200, bidirectional=True, 
-                    n_layers=2, trg_dim=10, use_residual=True, dropout=0.1):
+    def __init__(self, rnn_type, pre_trained_embedding, n_pre_motions, 
+                hidden, bidirectional, n_layers, trg_dim, use_residual, dropout):
         super().__init__()
         self.rnn_type = rnn_type
         self.n_layers = n_layers
@@ -34,12 +33,14 @@ class Seq2Seq(nn.Module):
         # reshape to S x B x dim
         src = src.transpose(0, 1)
         trg = trg.transpose(0, 1)
+        
         # run words through the encoder
         enc_out, enc_hid = self.encoder(src, src_len)
         # initialize decoder's hidden state as encoder's last hidden state (2 x b x dim)
         dec_hid = enc_hid
         # set output to be stored
         all_dec_out = torch.zeros(trg.size(0), trg.size(1), trg.size(2)).to(trg.device) # B x S x dim
+        
         # set initial motion
         dec_in = torch.zeros(trg.size(1), trg.size(2)).to(trg.device)
         # run through decoder one time step at a time
@@ -54,14 +55,3 @@ class Seq2Seq(nn.Module):
                 dec_in = dec_out
 
         return all_dec_out.transpose(0, 1)
-
-
-# if __name__ == '__main__':
-    
-#     # dummpy src and trg data
-#     src = torch.ones(2,8).long()
-#     trg = torch.randn(2,30,10).float()
-    
-#     model = Seq2Seq()
-    
-#     o = model(src, torch.tensor([8, 8]), trg)

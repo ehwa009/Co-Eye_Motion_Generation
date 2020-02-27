@@ -8,12 +8,8 @@ import os
 from torch import optim
 from tqdm import tqdm, tqdm_gui
 from Seq2Eye.model import Seq2Seq
-from expression_dataset import EyeExpressionDataset
-from torch.utils.data.sampler import SubsetRandomSampler
-from torch.utils.data import DataLoader
-# from functools import partial
 from constant import *
-from collate import collate_fn
+from dataloader import prepare_dataloaders, prepare_kfold_dataloaders
 
 
 torch.multiprocessing.set_sharing_strategy('file_system') # to prevent error
@@ -41,40 +37,80 @@ def custom_loss(output, trg, alpha=0.001, beta=0.1):
 
     return loss
 
+def train_kfold(model, train_data_list, test_data_list, optim, device, opt, start_i):
+    if opt.log:
+        log_train_file = opt.log + '/train.log'
+        log_valid_file = opt.log + '/valid.log'
+        print('[INFO] Training performance will be written to {} and {}'.format(log_train_file, log_valid_file))
+        # check log file exists or not
+        if not(os.path.exists(opt.log)):
+            os.mkdir(opt.log)
+        if not(os.path.exists(log_train_file) and os.path.exists(log_valid_file)):
+            with open(log_train_file, 'w') as log_tf, open(log_valid_file, 'w') as log_vf:
+                log_tf.write('epoch,loss\n')
+                log_vf.write('epoch,loss\n')
 
-def prepare_dataloaders(data, opt):
-    validation_split = 0.2 # which is 20% of whole dataset
-    random_seed = 42
-    # get dataset class
-    eye_expression_dataset = EyeExpressionDataset(
-                                word2idx=data['lang'].word2index,
-                                idx2word=data['lang'].index2word,
-                                src_insts=data['src_insts'],
-                                trg_ints=data['trg_insts'],)
-    dataset_indicies = list(range(eye_expression_dataset.__len__()))
-    split_index = int(np.floor(validation_split * eye_expression_dataset.__len__()))
-    if opt.is_shuffle:
-        np.random.seed(random_seed)
-        np.random.shuffle(dataset_indicies)
-    # get train and validation dataset indicies
-    train_indicies, valid_indicies = dataset_indicies[split_index:], dataset_indicies[:split_index]
-    train_sampler = SubsetRandomSampler(train_indicies)
-    valid_sampler = SubsetRandomSampler(valid_indicies)
-    # get train and valid loader
-    train_loader = DataLoader(
-                        dataset=eye_expression_dataset,
-                        batch_size=opt.batch_size,
-                        num_workers=opt.num_workers,
-                        sampler=train_sampler,
-                        collate_fn=collate_fn)
-    valid_loader = DataLoader(
-                        dataset=eye_expression_dataset,
-                        batch_size=opt.batch_size,
-                        num_workers=opt.num_workers,
-                        sampler=valid_sampler,
-                        collate_fn=collate_fn)
+    train_loss_list = []
+    test_loss_list = []
+    epoch = 0
+    for _ in tqdm_gui(range(0, int(opt.epoch/opt.n_splits))):
+        for train_data, test_data in zip(train_data_list, test_data_list):
+            print('[INFO] Epoch: {}'. format(epoch))
+            # train process
+            start = time.time()
+            train_loss = train_epoch(model, train_data, optim, device, opt)
+            print('\t- (Train)    loss: {:8.5f}, elapse: {:3.3f}'.format(
+                                        train_loss, (time.time() - start)/60))
+            train_loss_list += [train_loss]
+            # valid process
+            start = time.time()
+            test_loss = valid_epoch(model, test_data, device, opt)
+            print('\t- (Test)    loss: {:8.5f}, elapse: {:3.3f}'.format(
+                                            test_loss, (time.time() - start)/60))
+            test_loss_list += [test_loss] # record each valid loss
 
-    return train_loader, valid_loader
+            # record train and valid log files
+            if log_train_file and log_valid_file:
+                with open(log_train_file, 'a') as log_tf, open(log_valid_file, 'a') as log_vf:
+                    log_tf.write('{},{:8.5f}\n'.format(epoch, train_loss))
+                    log_vf.write('{},{:8.5f}\n'.format(epoch, test_loss))
+
+            # to save trained model
+            model_state_dict = model.state_dict()
+            checkpoint = {
+                'model': model_state_dict,
+                'setting': opt,
+                'epoch': epoch
+            }
+            if not(os.path.exists(opt.chkpt)):
+                os.mkdir(opt.chkpt)
+            if opt.save_mode == 'best':
+                model_name = '{}/eye_model.chkpt'.format(opt.chkpt)
+                if train_loss <= min(train_loss_list):
+                    torch.save(checkpoint, model_name)
+                    print('\t[INFO] The checkpoint has been updated ({}).'.format(opt.save_mode))
+            elif opt.save_mode == 'interval':
+                if (epoch % opt.save_interval) == 0 and epoch != 0:
+                    model_name = '{}/{}_{:0.3f}.chkpt'.format(opt.chkpt, epoch, train_loss)
+                    torch.save(checkpoint, model_name)
+                    print('\t[INFO] The checkpoint has been updated ({}).'.format(opt.save_mode))
+            elif opt.save_mode == 'best_and_interval':
+                model_name = '{}/eye_model.chkpt'.format(opt.chkpt)
+                if train_loss <= min(train_loss_list):
+                    torch.save(checkpoint, model_name)
+                    print('\t[INFO] The best has been updated ({}).'.format(opt.save_mode))
+                if (epoch % opt.save_interval) == 0 and epoch != 0:
+                    model_name = '{}/{}_{:0.3f}.chkpt'.format(opt.chkpt, epoch, train_loss)
+                    torch.save(checkpoint, model_name)
+                    print('\t[INFO] The checkpoint has been saved ({}).'.format(opt.save_mode))
+            # save last trained model
+            if epoch == (opt.epoch - 1):
+                model_name = '{}/{}_{:0.3f}.chkpt'.format(opt.chkpt, epoch, train_loss)
+                torch.save(checkpoint, model_name)
+                print('\t[INFO] The last checkpoint has been saved.')
+            
+            # increase epoch
+            epoch += 1
 
 
 def train(model, train_data, valid_data, optim, device, opt, start_i):
@@ -201,6 +237,8 @@ def main():
     parser.add_argument('-log', default='./log')
     parser.add_argument('-save_mode', default='best_and_interval')
     parser.add_argument('-save_interval', type=int, default=20)
+    parser.add_argument('-n_splits', type=int, default=5) # 5 -> 0.8 train, 0.2 test
+    parser.add_argument('-is_kfold', type=bool, default=True)
 
     # network parameters
     parser.add_argument('-rnn_type', default='LSTM')
@@ -225,7 +263,13 @@ def main():
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     # load dataset
     data = torch.load(opt.data)
-    train_data, valid_data = prepare_dataloaders(data, opt)
+
+    if opt.is_kfold:
+        print('[INFO] Dataset was divided for KFold cross validation.')
+        train_data_list, test_data_list = prepare_kfold_dataloaders(data, opt)
+    else:
+        print('[INFO] Dataset was divided for train and valid.')
+        train_data, valid_data = prepare_dataloaders(data, opt)
 
     if os.path.exists(opt.trained_model):
         print('[INFO] Continue train from checkpoint from: {}'.format(opt.trained_model))
@@ -253,7 +297,10 @@ def main():
     # optimizer
     optimizer = optim.Adam(model.parameters(), lr=opt.lr, weight_decay=opt.wd)
     # train process
-    train(model, train_data, valid_data, optimizer, device, opt, start_i)
+    if opt.is_kfold:
+        train_kfold(model, train_data_list, test_data_list, optimizer, device, opt, start_i)
+    else:
+        train(model, train_data, valid_data, optimizer, device, opt, start_i)
 
 
 if __name__ == '__main__':

@@ -44,7 +44,7 @@ def collate_fn(insts):
             length = np.count_nonzero(seq)
             input_seq_length.append(length)
         # get eye expression_motion seqeunces
-        output_seq = padded_trg_array[:, i:i + total_motion_frames]
+        output_seq = padded_trg_array[:, i:i + total_motion_frames, 2:] # don't use 1 and 2 plane
         # convert numpy array to torch tensor and add up
         src_seq_list.append(torch.LongTensor(input_seq)) # long type due to embedding 
         src_length_list.append(input_seq_length)

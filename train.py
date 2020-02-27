@@ -282,7 +282,7 @@ def main():
                         bidirectional=setting.bidirectional, 
                         n_layers=setting.n_layers, dropout=setting.dropout,
                         n_pre_motions=PRE_MOTIONS, pre_trained_embedding=data['emb_table'], 
-                        trg_dim=data['estimator'].n_components, use_residual=setting.use_residual).to(device)
+                        trg_dim=data['estimator'].n_components-2, use_residual=setting.use_residual).to(device)
         # load trained state
         model.load_state_dict(state)
     else:
@@ -292,7 +292,7 @@ def main():
                         bidirectional=opt.bidirectional, 
                         n_layers=opt.n_layers, dropout=opt.dropout,
                         n_pre_motions=PRE_MOTIONS, pre_trained_embedding=data['emb_table'], 
-                        trg_dim=data['estimator'].n_components, use_residual=opt.use_residual).to(device)
+                        trg_dim=data['estimator'].n_components-2, use_residual=opt.use_residual).to(device)
         start_i = 0 # initial epoch
     # optimizer
     optimizer = optim.Adam(model.parameters(), lr=opt.lr, weight_decay=opt.wd)

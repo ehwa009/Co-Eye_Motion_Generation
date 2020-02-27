@@ -4,12 +4,10 @@ import torch.nn.functional as F
 import numpy as np
 import math
 
-'''
-GRU
-'''
+
 class EncoderRNN(nn.Module):
     
-    def __init__(self, embbedding_size, pre_trained_embedding, rnn_type, hidden, bidirectional, n_layers, dropout=0.1):
+    def __init__(self, pre_trained_embedding, rnn_type, hidden, bidirectional, n_layers, dropout=0.1):
         super().__init__()
         self.hidden = hidden
         self.bidirectional = bidirectional
@@ -18,15 +16,11 @@ class EncoderRNN(nn.Module):
         self.rnn_type = rnn_type
         self.n_directions = 2 if bidirectional else 1
 
-        # if pre_trained_embedding is not None:
-            # get embedding layer - glove
+        # get embedding layer - glove
         self.embedding = nn.Embedding.from_pretrained(
                             torch.from_numpy(pre_trained_embedding).float(),
                             freeze=True)
         self.embedding_size = self.embedding.embedding_dim
-        # else:
-        #     self.embedding = nn.Embedding(src_size, embbedding_size)
-
         # initialize rnn
         self.rnn = getattr(nn, self.rnn_type)(
                         self.embedding_size, hidden, n_layers,

@@ -5,29 +5,30 @@ import numpy as np
 import math
 
 from Seq2Eye.encoder import EncoderRNN
-# from Seq2Eye.decoder import Generator
 from Seq2Eye.luong_attn_decoder import Generator
 
 
 class Seq2Seq(nn.Module):
     
-    def __init__(self, rnn_type, src_size=8, pre_trained_embedding=None, embbedding_size=300, 
+    def __init__(self, rnn_type, pre_trained_embedding=None, 
                     n_pre_motions=10, hidden=200, bidirectional=True, 
                     n_layers=2, trg_dim=10, use_residual=True, dropout=0.1):
         super().__init__()
-        # encoder
-        self.encoder = EncoderRNN(
-                            embbedding_size=embbedding_size,
-                            pre_trained_embedding=pre_trained_embedding,
-                            hidden=hidden,
-                            rnn_type=rnn_type,
-                            bidirectional=bidirectional,
-                            n_layers=n_layers,
-                            dropout=dropout)
-        # decoder
-        self.decoder = Generator(self.encoder, trg_dim, dropout, use_residual)
-
+        self.rnn_type = rnn_type
+        self.n_layers = n_layers
+        self.hidden = hidden
+        self.pre_trained_embedding = pre_trained_embedding
+        self.use_residual = use_residual
+        self.dropout = dropout
+        self.bidirectional = bidirectional
         self.n_pre_motions = n_pre_motions
+        self.trg_dim = trg_dim
+        
+        # encoder
+        self.encoder = EncoderRNN(self.pre_trained_embedding, self.rnn_type, 
+                                self.hidden, self.bidirectional, self.n_layers, self.dropout)
+        # decoder
+        self.decoder = Generator(self.encoder, self.trg_dim, self.dropout, self.use_residual)
 
     def forward(self, src, src_len, trg):
         # reshape to S x B x dim
@@ -39,11 +40,12 @@ class Seq2Seq(nn.Module):
         dec_hid = enc_hid
         # set output to be stored
         all_dec_out = torch.zeros(trg.size(0), trg.size(1), trg.size(2)).to(trg.device) # B x S x dim
-        
+        # set initial motion
+        dec_in = torch.zeros(trg.size(1), trg.size(2)).to(trg.device)
         # run through decoder one time step at a time
-        dec_in = trg[0] # set inital motion
+        # dec_in = trg[0] # set inital motion (B x dim)
         all_dec_out[0] = dec_in
-        for step in range(1, trg.size(0)):
+        for step in range(0, trg.size(0)):
             dec_out, dec_hid, _ = self.decoder(dec_in, dec_hid, enc_out)
             all_dec_out[step] = dec_out
             if step < self.n_pre_motions: # use teacher forcing until n-previous motions

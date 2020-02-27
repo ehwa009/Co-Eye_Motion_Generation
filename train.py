@@ -66,28 +66,13 @@ def prepare_dataloaders(data, opt):
                         batch_size=opt.batch_size,
                         num_workers=opt.num_workers,
                         sampler=train_sampler,
-                        # shuffle=opt.is_shuffle,
                         collate_fn=collate_fn)
     valid_loader = DataLoader(
                         dataset=eye_expression_dataset,
                         batch_size=opt.batch_size,
                         num_workers=opt.num_workers,
                         sampler=valid_sampler,
-                        # shuffle=opt.is_shuffle,
                         collate_fn=collate_fn)
-    # # collate v2
-    # train_loader = DataLoader(
-    #                     dataset=eye_expression_dataset,
-    #                     batch_size=opt.batch_size,
-    #                     num_workers=opt.num_workers,
-    #                     sampler=train_sampler,
-    #                     collate_fn=collate_fn_v2)
-    # valid_loader = DataLoader(
-    #                     dataset=eye_expression_dataset,
-    #                     batch_size=opt.batch_size,
-    #                     num_workers=opt.num_workers,
-    #                     sampler=valid_sampler,
-    #                     collate_fn=collate_fn_v2)
 
     return train_loader, valid_loader
 
@@ -207,18 +192,18 @@ def main():
     parser = argparse.ArgumentParser()
 
     # general parameters
-    parser.add_argument('-data', default='./processed/processed_final_15_pca.pickle')
+    parser.add_argument('-data', default='./processed/processed_final.pickle')
     parser.add_argument('-chkpt', default='./chkpt')
     parser.add_argument('-trained_model', default='./chkpt/280_0.946.chkpt')
-    parser.add_argument('-batch_size', type=int, default=512)
-    parser.add_argument('-num_workers', type=int, default=7)
+    parser.add_argument('-batch_size', type=int, default=10)
+    parser.add_argument('-num_workers', type=int, default=0)
     parser.add_argument('-is_shuffle', type=bool, default=True)
     parser.add_argument('-log', default='./log')
     parser.add_argument('-save_mode', default='best_and_interval')
     parser.add_argument('-save_interval', type=int, default=20)
 
     # network parameters
-    parser.add_argument('-rnn_type', default='GRU')
+    parser.add_argument('-rnn_type', default='LSTM')
     parser.add_argument('-hidden', type=int, default=200)
     parser.add_argument('-n_layers', type=int, default=2)
     parser.add_argument('-dropout', type=float, default=0.1)

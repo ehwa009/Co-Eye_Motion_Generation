@@ -19,7 +19,6 @@ class Lang:
         self.word2count = {}
         self.index2word = {0: 'PAD', 1: 'UNK', 2: 'SOS', 3: 'EOS',}
         self.n_words = 2 # include SOS and EOS
-        
         # self.lang_model = spacy.load(lang_model)
 
     def add_sentence(self, sentence):
@@ -50,10 +49,6 @@ class Lang:
                 emb_table[key] = np.random.normal(scale=0.6, size=(w_dim, ))
 
         return emb_table
-
-    # def tokenize(self, text):
-    #     return [tok.text for tok in self.lang_model.tokenizer(text)]
-
 
 
 def unicode_to_ascii(string):

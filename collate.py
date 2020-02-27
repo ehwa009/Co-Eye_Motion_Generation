@@ -52,39 +52,3 @@ def collate_fn(insts):
 
     return zip(src_seq_list, src_length_list, trg_seq_list)
 
-
-# def collate_fn_v2(insts):
-#     seq_pairs = sorted(insts, key=lambda p: len(p[0]), reverse=True)
-#     src_insts, trg_insts = list(zip(*seq_pairs))
-#     # find max length of each seqeunce
-#     max_src_len = max(len(inst) for inst in src_insts)
-#     max_trg_len = max(len(inst) for inst in trg_insts)
-
-#     # padding
-#     padded_src_array = np.array([inst + [PAD] * (max_src_len - len(inst)) for inst in src_insts])
-#     for inst in trg_insts:
-#         trg_pad = []
-#         if max_trg_len - len(inst) > 0:
-#             for _ in range(max_trg_len - len(inst)):
-#                 trg_pad.append([0] * 15)
-#             inst += trg_pad
-#     padded_trg_array = np.array(trg_insts)
-#     # convert
-#     src_seq = torch.LongTensor(padded_src_array)
-#     trg_seq = torch.FloatTensor(padded_trg_array)
-
-#     # count available sequence length
-#     src_seq_length = []
-#     for seq in padded_src_array:
-#         length = np.count_nonzero(seq)
-#         src_seq_length.append(length)
-
-#     return src_seq, src_seq_length, trg_seq
-
-
-
-
-    
-
-
-

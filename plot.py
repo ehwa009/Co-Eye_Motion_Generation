@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 import pandas as pd
 import seaborn as sns
 import argparse

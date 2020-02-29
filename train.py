@@ -235,7 +235,7 @@ def main():
     parser.add_argument('-save_mode', default='best_and_interval')
     parser.add_argument('-save_interval', type=int, default=20)
     parser.add_argument('-n_splits', type=int, default=5) # 5 -> 0.8 train, 0.2 test
-    parser.add_argument('-is_kfold', type=bool, default=True)
+    parser.add_argument('-is_kfold', type=bool, default=False)
 
     # network parameters
     parser.add_argument('-rnn_type', default='LSTM')

@@ -43,7 +43,7 @@ def prepare_kfold_dataloaders(data, opt):
 
 def prepare_dataloaders(data, opt):
     validation_split = 0.2 # which is 20% of whole dataset
-    random_seed = 42
+    random_seed = 45
     # get dataset class
     eye_expression_dataset = EyeExpressionDataset(
                                 word2idx=data['lang'].word2index,

@@ -7,21 +7,21 @@ import random
 
 class Display:
 
-    def __init__(self, x_lim, y_lim, sp=30):
-        self.x_lim = x_lim
-        self.y_lim = y_lim
+    def __init__(self, height, width, sp=30):
+        self.height = height
+        self.width = width
         self.sp = sp
 
         # font settig
         self.font = cv2.FONT_HERSHEY_SIMPLEX
-        self.bottomLeftCornerOfText = (int(self.x_lim/54), int(self.y_lim/2))
-        self.topLeftConnerOfText = (int(self.x_lim/54), int(self.y_lim/19))
+        self.bottomLeftCornerOfText = (int(self.height/54), int(self.width/2))
+        self.topLeftConnerOfText = (int(self.height/54), int(self.width/19))
         self.fontScale = 0.4
         self.fontColor = (255,255,255)
         self.lineType = 1
             
     def draw_frame(self, landmark, is_center, text=None, title=None):
-        frame = np.zeros((self.x_lim, self.y_lim, 3), np.uint8)
+        frame = np.zeros((self.height, self.width, 3), np.uint8)
         
         left_eye_region = np.array(list(zip(landmark[4:16:2], landmark[5:16:2])), np.int32)
         right_eye_region = np.array(list(zip(landmark[16:28:2], landmark[17:28:2])), np.int32)
@@ -72,7 +72,7 @@ class Display:
 
     def display_and_save(self, eye_motion_list, text, save_path):
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter('{}/output.mp4'.format(save_path), fourcc, 20.0, (self.x_lim, self.y_lim))
+        out = cv2.VideoWriter('{}/output.mp4'.format(save_path), fourcc, 20.0, (self.height, self.width))
         for eye_motion in eye_motion_list:
             frame = self.draw_frame(eye_motion, False, text)
             out.write(frame)

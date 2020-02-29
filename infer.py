@@ -84,15 +84,16 @@ def main():
 
     parser.add_argument('-data', default='./processed/processed_final.pickle')
     parser.add_argument('-chkpt', default='./chkpt/eye_model.chkpt')
-    # parser.add_argument('-chkpt', default='./chkpt/460_0.690.chkpt')
+    # parser.add_argument('-chkpt', default='./chkpt/1380_0.291.chkpt')
     # parser.add_argument('-chkpt', default='./chkpt/lr_0.0001_batch_size_512/eye_model.chkpt')
     parser.add_argument('-vid_save_path', default='./output_vid')
 
     opt = parser.parse_args()
 
-    # sent = 'Physical education usually involves studying human biology and exercise'
-    sent = "it's really not a good thing to do no matter what stage of life you re in"
-    # sent = "If the coronavirus epidemic materially affects US economic growth it may increase the likelihood of Democratic victory in the 2020 election"
+    # sent = "it's really not a good thing to do no matter what stage of life you re in"
+    sent = "it's really a good thing to do no matter what stage of life you re in"
+    # sent = "I don't know if anyone out there is still having problems with this, but here are the problems I ran into and how I solved them"
+    # sent = 'but you can also use parent to describe someone who raised you so maybe your biological mother'
 
     # load data
     data = torch.load(opt.data)
@@ -124,7 +125,7 @@ def main():
             eye_motion_list.append(transformed)
 
     # display infered output
-    display = Display(180, 320, 50) # 320 x 180
+    display = Display(300, 300, 50) # 320 x 180
     display.display_and_save(eye_motion_list, sent, opt.vid_save_path)
 
 
